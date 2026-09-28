@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Donki Touch</title>
+  <title>Donki Touch - Voice Enabled</title>
   <style>
     :root {
       --primary-color: #fbd000;
@@ -89,6 +89,7 @@
       border-radius: var(--border-radius);
       padding: 18px;
       margin-bottom: 16px;
+      position: relative;
     }
     .card-staff-show .title { font-size: 0.85rem; color: #1864ab; font-weight: bold; margin-bottom: 8px; }
     .card-staff-show .main-text { font-size: 1.2rem; font-weight: bold; color: #1864ab; }
@@ -147,14 +148,46 @@
       padding: 18px;
       border-radius: var(--border-radius);
       margin-top: 16px;
+      position: relative;
     }
     .result-kr { font-size: 1.15rem; font-weight: bold; color: #212529; }
     .result-jp { font-size: 0.95rem; color: #6c757d; margin-top: 6px; font-weight: normal; }
 
     .input-box {
       width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ced4da;
-      font-size: 1rem; margin-bottom: 12px;
+      font-size: 1rem;
     }
+
+    /* TTS 및 STT 공용 버튼 스타일 */
+    .tts-btn {
+      background: #1864ab;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tts-btn:hover { background: #1c7ed6; }
+
+    .mic-btn {
+      background: #fa5252;
+      color: white;
+      border: none;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .mic-btn:hover { background: #e03131; }
 
     .spinner-loader {
       display: inline-block;
@@ -174,7 +207,7 @@
 
 <div class="app-container">
   <header>
-    <span>Donki Touch</span>
+    <span>Donki Touch 🎤🔊</span>
     <button class="home-btn" onclick="resetAllAndGoHome()">처음으로 (전체 리셋)</button>
   </header>
 
@@ -182,7 +215,7 @@
     <!-- 1. 메인 화면 -->
     <section id="page-home" class="page active">
       <h2 style="font-size:1.4rem; margin-bottom:8px;">원하시는 쇼핑 지원 서비스를 선택하세요</h2>
-      <p style="color:#666; margin-bottom:16px;">메뉴를 선택하시면 완벽한 일본어 회화 문장과 점원 응답 패널이 제공됩니다.</p>
+      <p style="color:#666; margin-bottom:16px;">메뉴를 선택하시면 완벽한 일본어 회화 문장, 음성 출력 및 점원 응답 패널이 제공됩니다.</p>
       
       <div class="menu-grid">
         <button class="menu-btn" onclick="openTaxPage()">
@@ -196,7 +229,7 @@
         <button class="menu-btn" onclick="openStockPage()">
           <div>
             <div style="font-size:1.2rem; font-weight:bold;">📦 물건 재고 및 위치 문의</div>
-            <div style="font-size:0.85rem; color:#666; margin-top:4px;">인기 상품 사전 및 실시간 일본어 번역 지원</div>
+            <div style="font-size:0.85rem; color:#666; margin-top:4px;">음성/텍스트 검색 및 실시간 일본어 번역 지원</div>
           </div>
           <span style="font-size:1.4rem;">➔</span>
         </button>
@@ -237,6 +270,7 @@
             <div class="title">선택한 질문 (점원에게 보여주는 문장)</div>
             <div class="main-text" id="tax-q-jp">質問を選択してください。</div>
             <div class="sub-text" id="tax-q-kr">질문을 선택해 주세요.</div>
+            <button class="tts-btn" onclick="speakCurrentElement('tax-q-jp', 'ja-JP')">🔊 일본어 발음 듣기</button>
           </div>
         </div>
 
@@ -278,6 +312,7 @@
             <div style="font-size:0.85rem; color:#856404; font-weight:bold; margin-bottom:4px;">점원 답변 회화 문장</div>
             <div class="result-kr" id="result-tax-kr">점원의 답변이 여기에 문장으로 표시됩니다.</div>
             <div class="result-jp" id="result-tax-jp">店員の回答が表示されます。</div>
+            <button class="tts-btn" onclick="speakCurrentElement('result-tax-jp', 'ja-JP')">🔊 점원 답변 일본어 듣기</button>
           </div>
         </div>
       </div>
@@ -289,10 +324,11 @@
       
       <div class="content-layout">
         <div>
-          <h3 style="margin-bottom:10px;">1. 물품명을 입력하고 엔터(Enter)를 누르세요</h3>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="item-name-input" class="input-box" placeholder="예: 동전파스, 카베진, 이브 (입력 후 엔터)" onkeydown="if(event.key==='Enter') translateAndGenerateSentences();">
-            <button onclick="translateAndGenerateSentences()" style="padding:0 20px; height:48px; background:var(--primary-color); border:none; border-radius:8px; font-weight:bold; cursor:pointer; white-space:nowrap;">검색 / 번역 ↵</button>
+          <h3 style="margin-bottom:10px;">1. 물품명을 입력하거나 음성으로 말하세요</h3>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <input type="text" id="item-name-input" class="input-box" placeholder="예: 동전파스, 카베진, 이브 (엔터 또는 검색)" onkeydown="if(event.key==='Enter') translateAndGenerateSentences();">
+            <button class="mic-btn" onclick="startVoiceRecognition()">🎤 음성입력</button>
+            <button onclick="translateAndGenerateSentences()" style="padding:0 16px; background:var(--primary-color); border:none; border-radius:8px; font-weight:bold; cursor:pointer; white-space:nowrap;">검색 ↵</button>
           </div>
 
           <div id="translated-info" style="font-size:0.95rem; color:#2b8a3e; font-weight:bold; margin-bottom:12px; display:none;">
@@ -301,13 +337,14 @@
 
           <h3 style="margin-bottom:10px;">2. 회화 질문 선택</h3>
           <div class="user-select-group" id="stock-question-list">
-            <div style="color:#868e96; font-size:0.9rem; padding:10px 0;">물품명을 입력 후 엔터(Enter)를 눌러주세요.</div>
+            <div style="color:#868e96; font-size:0.9rem; padding:10px 0;">물품명을 입력하거나 마이크로 말씀해주세요.</div>
           </div>
 
           <div class="card-staff-show">
             <div class="title">선택한 질문 (점원에게 보여주는 문장)</div>
             <div class="main-text" id="stock-q-jp">質問を選択してください。</div>
             <div class="sub-text" id="stock-q-kr">질문을 선택해 주세요.</div>
+            <button class="tts-btn" onclick="speakCurrentElement('stock-q-jp', 'ja-JP')">🔊 일본어 발음 듣기</button>
           </div>
         </div>
 
@@ -342,10 +379,10 @@
               </div>
 
               <div style="display:flex; gap:8px;">
-                <input type="number" id="stock-qty" placeholder="個数 (개수 직접 입력)" style="flex:1; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                <input type="number" id="stock-qty" placeholder="개수 입력" style="flex:1; padding:8px; border-radius:4px; border:1px solid #ccc;">
                 <button onclick="confirmStockAndMove()" style="padding:8px 16px; background:var(--primary-color); border:none; border-radius:4px; font-weight:bold; cursor:pointer; text-align:center;">
-                  <div>확인 및 위치 이동</div>
-                  <div style="font-size:0.75rem; font-weight:normal; color:#444;">確認 & 位置選択 ➔</div>
+                  <div>확인 및 이동</div>
+                  <div style="font-size:0.75rem; font-weight:normal; color:#444;">確認 & 位置 ➔</div>
                 </button>
               </div>
             </div>
@@ -355,6 +392,7 @@
             <div style="font-size:0.85rem; color:#856404; font-weight:bold; margin-bottom:4px;">재고 답변 회화 문장</div>
             <div class="result-kr" id="result-stock-kr">점원의 응답이 여기에 문장으로 표시됩니다.</div>
             <div class="result-jp" id="result-stock-jp">店員の回答が表示されます。</div>
+            <button class="tts-btn" onclick="speakCurrentElement('result-stock-jp', 'ja-JP')">🔊 점원 답변 일본어 듣기</button>
           </div>
         </div>
       </div>
@@ -370,6 +408,7 @@
             <div class="title">위치 문의 문장 (점원에게 보여주는 문장)</div>
             <div class="main-text" id="loc-q-jp">「この商品は何階の何番ラインにありますか？」</div>
             <div class="sub-text" id="loc-q-kr">"이 제품은 몇 층 무슨 라인에 있나요?"</div>
+            <button class="tts-btn" onclick="speakCurrentElement('loc-q-jp', 'ja-JP')">🔊 일본어 발음 듣기</button>
           </div>
         </div>
 
@@ -406,6 +445,7 @@
             <div style="font-size:0.85rem; color:#856404; font-weight:bold; margin-bottom:4px;">위치 답변 회화 문장</div>
             <div class="result-kr" id="result-item-loc-kr">층수와 라인을 선택해 주세요.</div>
             <div class="result-jp" id="result-item-loc-jp">階数とラインを選択してください。</div>
+            <button class="tts-btn" onclick="speakCurrentElement('result-item-loc-jp', 'ja-JP')">🔊 점원 답변 일본어 듣기</button>
           </div>
         </div>
       </div>
@@ -441,6 +481,7 @@
             <div class="title">선택한 질문 (점원에게 보여주는 문장)</div>
             <div class="main-text" id="fac-q-jp">質問を選択してください。</div>
             <div class="sub-text" id="fac-q-kr">질문을 선택해 주세요.</div>
+            <button class="tts-btn" onclick="speakCurrentElement('fac-q-jp', 'ja-JP')">🔊 일본어 발음 듣기</button>
           </div>
         </div>
 
@@ -469,6 +510,7 @@
             <div style="font-size:0.85rem; color:#856404; font-weight:bold; margin-bottom:4px;">시설 위치 답변 회화 문장</div>
             <div class="result-kr" id="result-facility-kr">시설과 위치를 선택해 주세요.</div>
             <div class="result-jp" id="result-facility-jp">施設と位置を選択してください。</div>
+            <button class="tts-btn" onclick="speakCurrentElement('result-facility-jp', 'ja-JP')">🔊 점원 답변 일본어 듣기</button>
           </div>
         </div>
       </div>
@@ -478,7 +520,7 @@
 </div>
 
 <script>
-  // 32가지 돈키호테 인기 쇼핑 상품 커스텀 사전 (번역 오류 방지)
+  // 32가지 돈키호테 인기 쇼핑 상품 커스텀 사전
   const donkiDictionary = {
     '동전파스': 'ロイヒつぼ膏',
     '코인파스': 'ロイヒつぼ膏（コインパッチ）',
@@ -516,29 +558,67 @@
 
   let currentItemKr = '';
   let currentItemJp = '';
-
   let itemFloorKr = '', itemFloorJp = '', itemLine = '';
   let facTargetKr = '', facTargetJp = '', facFloorKr = '', facFloorJp = '', facDirKr = '', facDirJp = '';
 
+  // --- TTS (음성 출력) 기능 ---
+  function speakText(text, lang) {
+    if (!('speechSynthesis' in window)) {
+      alert('이 브라우저는 음성 출력을 지원하지 않습니다.');
+      return;
+    }
+    window.speechSynthesis.cancel(); // 진행 중인 음성 중지
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang; // 'ja-JP' 또는 'ko-KR'
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function speakCurrentElement(elementId, lang) {
+    const text = document.getElementById(elementId).innerText;
+    if (text && !text.includes('선택해주세요') && !text.includes('표시됩니다')) {
+      // 괄호나 기호 제거 후 깔끔하게 읽기
+      const cleanText = text.replace(/[「」"]/g, '');
+      speakText(cleanText, lang);
+    } else {
+      alert('읽어줄 텍스트가 없습니다. 먼저 항목을 선택해주세요.');
+    }
+  }
+
+  // --- STT (음성 인식) 기능 ---
+  function startVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 브라우저 권장)');
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR'; // 한국어 음성 인식
+    recognition.interimResults = false;
+    
+    recognition.onresult = function(event) {
+      const spokenText = event.results[0][0].transcript;
+      document.getElementById('item-name-input').value = spokenText;
+      translateAndGenerateSentences(); // 자동 검색 실행
+    };
+    
+    recognition.onerror = function(event) {
+      alert('음성 인식 오류가 발생했습니다: ' + event.error);
+    };
+    
+    recognition.start();
+  }
+
+  // --- 페이지 제어 및 기존 로직 ---
   function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
   }
 
-  function openTaxPage() {
-    resetTaxData();
-    showPage('page-tax');
-  }
-
-  function openStockPage() {
-    resetStockData();
-    showPage('page-stock');
-  }
-
-  function openFacilityPage() {
-    resetFacilityData();
-    showPage('page-facility');
-  }
+  function openTaxPage() { resetTaxData(); showPage('page-tax'); }
+  function openStockPage() { resetStockData(); showPage('page-stock'); }
+  function openFacilityPage() { resetFacilityData(); showPage('page-facility'); }
 
   function resetTaxData() {
     document.getElementById('tax-q-kr').innerText = '질문을 선택해 주세요.';
@@ -548,17 +628,15 @@
   }
 
   function resetStockData() {
-    currentItemKr = ''; 
-    currentItemJp = '';
+    currentItemKr = ''; currentItemJp = '';
     itemFloorKr = ''; itemFloorJp = ''; itemLine = '';
-    
     let inputElem = document.getElementById('item-name-input');
     if (inputElem) inputElem.value = '';
     
     document.getElementById('translated-info').style.display = 'none';
     document.getElementById('loader-icon').innerHTML = '';
     document.getElementById('translated-word').innerText = '';
-    document.getElementById('stock-question-list').innerHTML = '<div style="color:#868e96; font-size:0.9rem; padding:10px 0;">물품명을 입력 후 엔터(Enter)를 눌러주세요.</div>';
+    document.getElementById('stock-question-list').innerHTML = '<div style="color:#868e96; font-size:0.9rem; padding:10px 0;">물품명을 입력하거나 마이크로 말씀해주세요.</div>';
     document.getElementById('stock-count-area').style.display = 'none';
     document.getElementById('stock-qty').value = '';
     
@@ -594,21 +672,22 @@
   function selectTaxQuestion(kr, jp) {
     document.getElementById('tax-q-kr').innerText = `"${kr}"`;
     document.getElementById('tax-q-jp').innerText = `「${jp}」`;
+    speakText(jp, 'ja-JP'); // 질문 선택 시 자동 음성 출력
   }
   function setTaxResult(kr, jp) {
     document.getElementById('result-tax-kr').innerText = kr;
     document.getElementById('result-tax-jp').innerText = jp;
+    speakText(jp, 'ja-JP'); // 점원 선택 시 자동 음성 출력
   }
 
   async function translateAndGenerateSentences() {
     const inputVal = document.getElementById('item-name-input').value.trim();
     if (!inputVal) {
-      alert('물품 이름을 입력해주세요!');
+      alert('물품 이름을 입력하거나 음성으로 말해주세요!');
       return;
     }
     
     currentItemKr = inputVal;
-    
     const infoDiv = document.getElementById('translated-info');
     const loader = document.getElementById('loader-icon');
     const wordSpan = document.getElementById('translated-word');
@@ -653,6 +732,7 @@
   function selectStockQuestion(kr, jp) {
     document.getElementById('stock-q-kr').innerText = `"${kr}"`;
     document.getElementById('stock-q-jp').innerText = `「${jp}」`;
+    speakText(jp, 'ja-JP');
   }
 
   function selectStockStatus(status) {
@@ -662,12 +742,14 @@
       let itemJp = currentItemJp || 'この商品';
       document.getElementById('result-stock-kr').innerText = `${itemKr} 재고가 있습니다. 수량을 선택/입력해 주세요.`;
       document.getElementById('result-stock-jp').innerText = `${itemJp}の在庫があります。数量を選択・入力してください。`;
+      speakText(`${itemJp}の在庫があります。`, 'ja-JP');
     } else {
       document.getElementById('stock-count-area').style.display = 'none';
       let itemKr = currentItemKr || '이 제품';
       let itemJp = currentItemJp || 'この商品';
       document.getElementById('result-stock-kr').innerText = `죄송합니다. ${itemKr}은(는) 현재 품절입니다.`;
       document.getElementById('result-stock-jp').innerText = `申し訳ありません。${itemJp}は現在売り切れです。`;
+      speakText(`申し訳ありません。${itemJp}は現在売り切れです。`, 'ja-JP');
     }
   }
 
@@ -678,6 +760,7 @@
     
     document.getElementById('result-stock-kr').innerText = `${itemKr} 재고가 약 ${qty}개 있습니다.`;
     document.getElementById('result-stock-jp').innerText = `${itemJp}の在庫が約${qty}個あります。`;
+    speakText(`${itemJp}の在庫が約${qty}個あります。`, 'ja-JP');
 
     setTimeout(() => {
       showPage('page-item-location');
@@ -692,6 +775,7 @@
     
     document.getElementById('result-stock-kr').innerText = `${itemKr} 재고가 넉넉히 있습니다.`;
     document.getElementById('result-stock-jp').innerText = `${itemJp}の在庫は十分にあります。`;
+    speakText(`${itemJp}の在庫は十分にあります。`, 'ja-JP');
 
     setTimeout(() => {
       showPage('page-item-location');
@@ -719,6 +803,7 @@
       let itemJp = currentItemJp || 'この商品';
       document.getElementById('result-item-loc-kr').innerText = `${itemKr}은(는) ${itemFloorKr} ${itemLine}라인에 있습니다.`;
       document.getElementById('result-item-loc-jp').innerText = `${itemJp}は${itemFloorJp}の${itemLine}ラインにあります。`;
+      speakText(`${itemJp}は${itemFloorJp}の${itemLine}ラインにあります。`, 'ja-JP');
     }
   }
 
@@ -728,6 +813,7 @@
     facTargetKr = kr; facTargetJp = jp;
     document.getElementById('fac-q-kr').innerText = `"${kr}은(는) 어디에 있나요?"`;
     document.getElementById('fac-q-jp').innerText = `「${jp}はどこにありますか？」`;
+    speakText(`${jp}はどこにありますか？`, 'ja-JP');
     updateFacilityLoc();
   }
   function setFacilityFloor(kr, jp, btn) {
@@ -746,6 +832,7 @@
     if(facTargetKr && facFloorKr && facDirKr) {
       document.getElementById('result-facility-kr').innerText = `${facTargetKr}은(는) ${facFloorKr} ${facDirKr}`;
       document.getElementById('result-facility-jp').innerText = `${facTargetJp}は${facFloorJp}の${facDirJp}`;
+      speakText(`${facTargetJp}は${facFloorJp}の${facDirJp}`, 'ja-JP');
     }
   }
 </script>
